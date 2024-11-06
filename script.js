@@ -57,7 +57,7 @@ async function createCryptoChart(cryptoId) {
       ],
     },
     options: {
-      responsive: true,
+      responsive: false,
       maintainAspectRatio: false,
       scales: {
         x: {
