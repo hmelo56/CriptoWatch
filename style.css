@@ -1,0 +1,48 @@
+*{
+    box-sizing: border-box;
+    margin: 0;
+}
+body {
+    font-family: Arial, sans-serif;
+    background-color: #6b6bf5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    margin: 0;
+}
+
+h1 {
+    margin: 1rem;
+    font-family: 'Press Start 2P', cursive;
+    color: rgb(1, 107, 15);
+    text-shadow: #e7e7e7 2px 2px;
+    text-align: center;
+}
+
+.crypto-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    max-width: 1200px;
+}
+
+.crypto-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 8em ;
+    text-align: center;
+}
+
+.crypto-card img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 5px;
+}
+
+/*canvas {
+    margin-top: 10px;
+}
