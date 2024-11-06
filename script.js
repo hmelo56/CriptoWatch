@@ -41,7 +41,7 @@ async function createCryptoChart(cryptoId) {
   const prices = data.prices.map((price) => price[1])
 
   // Cria o gráfico usando Chart.js
-  const ctx = document.getElementById(`${cryptoId}Chart`).getContext("3d")
+  const ctx = document.getElementById(`${cryptoId}Chart`).getContext("2d")
   new Chart(ctx, {
     type: "line",
     data: {
