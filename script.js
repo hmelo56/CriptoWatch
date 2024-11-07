@@ -21,6 +21,7 @@ function createCryptoCard(crypto) {
         <p>ID: ${crypto.id}</p>
         <p>Preço Atual: R$ ${crypto.current_price.toLocaleString()}</p>
         <p>24h: ${crypto.market_cap_change_percentage_24h.toLocaleString()} %</p>
+        <p>Recorde: R$ ${crypto.ath}</p>
         <canvas id="${crypto.id}Chart" width="20" height="20"></canvas>
     `
   container.appendChild(card)
