@@ -12,6 +12,10 @@ function createCryptoCard(crypto) {
   const container = document.getElementById("cryptoContainer")
 
   // Cria um div para cada criptomoeda
+
+  const variationClass =
+    crypto.price_change_percentage_24h >= 0 ? "positive" : "negative"
+  
   const card = document.createElement("div")
   card.classList.add("crypto-card")
   card.innerHTML = `
@@ -20,7 +24,7 @@ function createCryptoCard(crypto) {
         <h2>${crypto.name} (${crypto.symbol.toUpperCase()})</h2>
         <p>ID: ${crypto.id}</p>
         <p>Preço Atual: R$ ${crypto.current_price.toLocaleString()}</p>
-        <p>24h: ${crypto.market_cap_change_percentage_24h.toLocaleString()}%</p>
+        <p class="variation ${variationClass}">24h: ${crypto.price_change_percentage_24h.toFixed(2)}%</p>
         <p>Recorde: R$ ${crypto.ath.toLocaleString()}</p>
         <canvas id="${crypto.id}Chart" width="20" height="20"></canvas>
     `
