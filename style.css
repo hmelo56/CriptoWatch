@@ -43,6 +43,14 @@ h1 {
     margin-bottom: 5px;
 }
 
+.positive {
+  color: green;
+}
+
+.negative {
+  color: red;
+}
+
 /*canvas {
     margin-top: 10px;
 }
