@@ -43,6 +43,10 @@ h1 {
     margin-bottom: 5px;
 }
 
+.crypto-card:hover {
+    background-color: #333;
+}
+
 .positive {
   color: green;
 }
