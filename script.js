@@ -15,7 +15,9 @@ function createCryptoCard(crypto) {
 
   const variationClass =
     crypto.price_change_percentage_24h >= 0 ? "positive" : "negative"
-  
+
+  const athDate = formatDateTime(crypto.ath_date)
+
   const card = document.createElement("div")
   card.classList.add("crypto-card")
   card.innerHTML = `
@@ -24,14 +26,30 @@ function createCryptoCard(crypto) {
         <h2>${crypto.name} (${crypto.symbol.toUpperCase()})</h2>
         <p>ID: ${crypto.id}</p>
         <p>Preço Atual: R$ ${crypto.current_price.toLocaleString()}</p>
-        <p class="variation ${variationClass}">24h: ${crypto.price_change_percentage_24h.toFixed(2)}%</p>
+        <p class="variation ${variationClass}">24h: ${crypto.price_change_percentage_24h.toFixed(
+    2
+  )}%</p>
         <p>Recorde: R$ ${crypto.ath.toLocaleString()}</p>
+        <p>Data: ${athDate}</p>
         <canvas id="${crypto.id}Chart" width="20" height="20"></canvas>
     `
   container.appendChild(card)
 
   // Configura o gráfico para essa criptomoeda
   createCryptoChart(crypto.id)
+}
+
+// Função para formatar a data e hora
+function formatDateTime(dateString) {
+  const date = new Date(dateString)
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })
 }
 
 async function createCryptoChart(cryptoId) {
