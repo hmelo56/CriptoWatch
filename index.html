@@ -1,981 +1,549 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CryptoWatch - Cryptocurrency Dashboard</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoWatch - Monitoramento de Criptomoedas</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      .gradient-bg {
-        background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-      }
-      .coin-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      }
-      .blink {
-        animation: blink-animation 1s steps(5, start) infinite;
-      }
-      @keyframes blink-animation {
-        to {
-          opacity: 0.5;
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         }
-      }
-      .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-      }
+        .coin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .positive {
+            color: #10b981;
+        }
+        .negative {
+            color: #ef4444;
+        }
+        .loading-spinner {
+            border-top-color: #3b82f6;
+            animation: spinner 1s linear infinite;
+        }
+        @keyframes spinner {
+            to { transform: rotate(360deg); }
+        }
     </style>
-  </head>
-  <body class="bg-gray-100 font-sans">
-    <div class="min-h-screen">
-      <!-- Header -->
-      <header class="gradient-bg text-white shadow-lg">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
         <div class="container mx-auto px-4 py-6">
-          <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-              <i class="fab fa-bitcoin text-3xl text-yellow-400"></i>
-              <h1 class="text-2xl font-bold">CryptoWatch</h1>
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <i class="fab fa-bitcoin text-3xl mr-3 text-yellow-400"></i>
+                    <h1 class="text-2xl font-bold">CryptoWatch</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <select id="currency-selector" class="bg-gray-800 text-white px-4 py-2 rounded-lg appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="usd">USD ($)</option>
+                            <option value="eur">EUR (€)</option>
+                            <option value="brl">BRL (R$)</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
+                    </div>
+                    <button id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Atualizar
+                    </button>
+                </div>
             </div>
-            <div class="flex items-center space-x-4">
-              <div class="hidden md:flex items-center space-x-2">
-                <span class="text-sm">Last update:</span>
-                <span id="last-update" class="font-mono text-sm blink"
-                  >updating...</span
-                >
-              </div>
-              <button
-                id="refresh-btn"
-                class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center space-x-2 transition"
-              >
-                <i class="fas fa-sync-alt"></i>
-                <span class="hidden md:inline">Refresh</span>
-              </button>
-            </div>
-          </div>
         </div>
-      </header>
+    </header>
 
-      <!-- Main Content -->
-      <main class="container mx-auto px-4 py-8">
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
         <!-- Search and Filter -->
-        <div class="mb-8 bg-white rounded-xl shadow-md p-4">
-          <div
-            class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-          >
-            <div class="relative flex-grow">
-              <div
-                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-              >
-                <i class="fas fa-search text-gray-400"></i>
-              </div>
-              <input
-                type="text"
-                id="search-input"
-                placeholder="Search cryptocurrencies..."
-                class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div class="flex space-x-2">
-              <select
-                id="currency-select"
-                class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="usd">USD</option>
-                <option value="eur">EUR</option>
-                <option value="gbp">GBP</option>
-                <option value="jpy">JPY</option>
-                <option value="brl">BRL</option>
-              </select>
-              <select
-                id="sort-select"
-                class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="market_cap_desc">Market Cap ↓</option>
-                <option value="market_cap_asc">Market Cap ↑</option>
-                <option value="volume_desc">Volume ↓</option>
-                <option value="volume_asc">Volume ↑</option>
-                <option value="id_asc">A-Z</option>
-                <option value="id_desc">Z-A</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Market Overview -->
-        <div class="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="bg-white rounded-xl shadow-md p-6 flex items-center">
-            <div class="mr-4 p-3 bg-blue-100 rounded-full">
-              <i class="fas fa-coins text-blue-600 text-xl"></i>
-            </div>
-            <div>
-              <p class="text-gray-500 text-sm">Total Market Cap</p>
-              <p id="total-market-cap" class="text-xl font-bold">Loading...</p>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow-md p-6 flex items-center">
-            <div class="mr-4 p-3 bg-green-100 rounded-full">
-              <i class="fas fa-chart-line text-green-600 text-xl"></i>
-            </div>
-            <div>
-              <p class="text-gray-500 text-sm">24h Volume</p>
-              <p id="total-volume" class="text-xl font-bold">Loading...</p>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow-md p-6 flex items-center">
-            <div class="mr-4 p-3 bg-purple-100 rounded-full">
-              <i class="fas fa-list-ol text-purple-600 text-xl"></i>
-            </div>
-            <div>
-              <p class="text-gray-500 text-sm">Active Cryptos</p>
-              <p id="active-cryptos" class="text-xl font-bold">Loading...</p>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow-md p-6 flex items-center">
-            <div class="mr-4 p-3 bg-red-100 rounded-full">
-              <i class="fas fa-percentage text-red-600 text-xl"></i>
-            </div>
-            <div>
-              <p class="text-gray-500 text-sm">Dominance</p>
-              <p id="btc-dominance" class="text-xl font-bold">Loading...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Crypto List -->
         <div class="mb-8">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-gray-800">
-              Top Cryptocurrencies
-            </h2>
-            <div class="flex items-center space-x-2">
-              <span class="text-sm text-gray-500">Auto-refresh:</span>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="auto-refresh"
-                  class="sr-only peer"
-                  checked
-                />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
-                ></div>
-              </label>
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="relative flex-grow">
+                    <input type="text" id="search-input" placeholder="Buscar criptomoedas..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search absolute right-3 top-3.5 text-gray-400"></i>
+                </div>
+                <select id="market-cap-filter" class="bg-white px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">Todas as moedas</option>
+                    <option value="top10">Top 10</option>
+                    <option value="top50">Top 50</option>
+                    <option value="top100">Top 100</option>
+                </select>
             </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="overflow-x-auto scrollbar-hide">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      #
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Coin
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Price
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      24h %
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Market Cap
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Volume (24h)
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Last 7 Days
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  id="crypto-table-body"
-                  class="bg-white divide-y divide-gray-200"
-                >
-                  <tr>
-                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
-                      Loading data...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
-        <!-- Detailed View Modal -->
-        <div id="coin-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-          <div
-            class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-          >
-            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span
-              class="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-              >&#8203;</span
-            >
-            <div
-              class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full"
-            >
-              <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div class="flex justify-between items-start">
-                  <div>
-                    <h3
-                      id="modal-coin-name"
-                      class="text-2xl font-bold text-gray-900"
-                    ></h3>
-                    <p id="modal-coin-symbol" class="text-gray-500"></p>
-                  </div>
-                  <button
-                    id="close-modal"
-                    class="text-gray-400 hover:text-gray-500"
-                  >
-                    <i class="fas fa-times"></i>
-                  </button>
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                        <i class="fas fa-chart-line text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Capitalização de Mercado</p>
+                        <h3 id="total-market-cap" class="text-2xl font-bold">Carregando...</h3>
+                    </div>
                 </div>
-                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <div class="flex items-center justify-between mb-4">
-                      <div>
-                        <p class="text-gray-500">Current Price</p>
-                        <p id="modal-coin-price" class="text-3xl font-bold"></p>
-                      </div>
-                      <div
-                        id="modal-coin-change"
-                        class="px-3 py-1 rounded-full text-sm font-medium"
-                      ></div>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                      <canvas id="coin-chart" height="250"></canvas>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                      <div class="bg-gray-50 p-3 rounded-lg">
-                        <p class="text-gray-500 text-sm">Market Cap</p>
-                        <p id="modal-coin-market-cap" class="font-bold"></p>
-                      </div>
-                      <div class="bg-gray-50 p-3 rounded-lg">
-                        <p class="text-gray-500 text-sm">24h Trading Volume</p>
-                        <p id="modal-coin-volume" class="font-bold"></p>
-                      </div>
-                      <div class="bg-gray-50 p-3 rounded-lg">
-                        <p class="text-gray-500 text-sm">Circulating Supply</p>
-                        <p id="modal-coin-supply" class="font-bold"></p>
-                      </div>
-                      <div class="bg-gray-50 p-3 rounded-lg">
-                        <p class="text-gray-500 text-sm">All Time High</p>
-                        <p id="modal-coin-ath" class="font-bold"></p>
-                      </div>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                      <h4 class="font-bold mb-2">Additional Info</h4>
-                      <div class="space-y-2">
-                        <div class="flex justify-between">
-                          <span class="text-gray-500">Genesis Date:</span>
-                          <span
-                            id="modal-coin-genesis"
-                            class="font-medium"
-                          ></span>
-                        </div>
-                        <div class="flex justify-between">
-                          <span class="text-gray-500">Hashing Algorithm:</span>
-                          <span
-                            id="modal-coin-algorithm"
-                            class="font-medium"
-                          ></span>
-                        </div>
-                        <div class="flex justify-between">
-                          <span class="text-gray-500">Homepage:</span>
-                          <a
-                            id="modal-coin-homepage"
-                            href="#"
-                            target="_blank"
-                            class="text-blue-500 hover:underline font-medium"
-                          ></a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
-              >
-                <button
-                  type="button"
-                  id="refresh-chart"
-                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Refresh Chart
-                </button>
-                <button
-                  type="button"
-                  id="view-coinmarketcap"
-                  class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  View on CoinGecko
-                </button>
-              </div>
             </div>
-          </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                        <i class="fas fa-exchange-alt text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Volume 24h</p>
+                        <h3 id="total-volume" class="text-2xl font-bold">Carregando...</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                        <i class="fas fa-coins text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Moedas Ativas</p>
+                        <h3 id="active-coins" class="text-2xl font-bold">Carregando...</h3>
+                    </div>
+                </div>
+            </div>
         </div>
-      </main>
 
-      <!-- Footer -->
-      <footer class="gradient-bg text-white py-6">
+        <!-- Crypto Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moeda</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">24h %</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capitalização</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Volume (24h)</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crypto-table-body" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full loading-spinner"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Gainers & Losers -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="bg-green-600 px-6 py-3">
+                    <h3 class="text-white font-semibold"><i class="fas fa-arrow-up mr-2"></i> Maiores Altas (24h)</h3>
+                </div>
+                <div id="top-gainers" class="divide-y divide-gray-200">
+                    <div class="px-6 py-4 text-center">
+                        <div class="flex justify-center">
+                            <div class="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="bg-red-600 px-6 py-3">
+                    <h3 class="text-white font-semibold"><i class="fas fa-arrow-down mr-2"></i> Maiores Baixas (24h)</h3>
+                </div>
+                <div id="top-losers" class="divide-y divide-gray-200">
+                    <div class="px-6 py-4 text-center">
+                        <div class="flex justify-center">
+                            <div class="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- News Section -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div class="bg-blue-600 px-6 py-3">
+                <h3 class="text-white font-semibold"><i class="fas fa-newspaper mr-2"></i> Últimas Notícias</h3>
+            </div>
+            <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                    <div class="h-48 bg-gray-200 animate-pulse"></div>
+                    <div class="p-4">
+                        <div class="h-6 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded animate-pulse w-3/4 mb-4"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse mb-1"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                    <div class="h-48 bg-gray-200 animate-pulse"></div>
+                    <div class="p-4">
+                        <div class="h-6 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded animate-pulse w-3/4 mb-4"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse mb-1"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                    <div class="h-48 bg-gray-200 animate-pulse"></div>
+                    <div class="p-4">
+                        <div class="h-6 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded animate-pulse w-3/4 mb-4"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse mb-1"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="gradient-bg text-white py-8">
         <div class="container mx-auto px-4">
-          <div class="flex flex-col md:flex-row justify-between items-center">
-            <div class="mb-4 md:mb-0">
-              <div class="flex items-center space-x-2">
-                <i class="fab fa-bitcoin text-2xl text-yellow-400"></i>
-                <span class="text-xl font-bold">CryptoWatch</span>
-              </div>
-              <p class="text-sm text-gray-300 mt-2">
-                Your comprehensive cryptocurrency monitoring dashboard
-              </p>
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-xl font-bold mb-2">CryptoWatch</h2>
+                    <p class="text-gray-300">Monitoramento de criptomoedas em tempo real</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="hover:text-blue-300 transition-colors"><i class="fab fa-twitter text-xl"></i></a>
+                    <a href="#" class="hover:text-blue-300 transition-colors"><i class="fab fa-telegram text-xl"></i></a>
+                    <a href="#" class="hover:text-blue-300 transition-colors"><i class="fab fa-github text-xl"></i></a>
+                    <a href="#" class="hover:text-blue-300 transition-colors"><i class="fab fa-discord text-xl"></i></a>
+                </div>
             </div>
-            <div class="flex space-x-6">
-              <a href="#" class="text-gray-300 hover:text-white">
-                <i class="fab fa-github text-xl"></i>
-              </a>
-              <a href="#" class="text-gray-300 hover:text-white">
-                <i class="fab fa-twitter text-xl"></i>
-              </a>
-              <a href="#" class="text-gray-300 hover:text-white">
-                <i class="fab fa-telegram text-xl"></i>
-              </a>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400 text-sm">
+                <p>© 2023 CryptoWatch. Todos os direitos reservados.</p>
+                <p class="mt-2">Dados fornecidos pela CoinGecko API.</p>
             </div>
-          </div>
-          <div
-            class="border-t border-gray-700 mt-6 pt-6 text-center text-sm text-gray-300"
-          >
-            <p>
-              Data provided by CoinGecko API. This is for informational purposes
-              only.
-            </p>
-            <p class="mt-2">© 2023 CryptoWatch. All rights reserved.</p>
-          </div>
         </div>
-      </footer>
-    </div>
+    </footer>
 
     <script>
-      // Configuration
-      const config = {
-        apiUrl: "https://api.coingecko.com/api/v3",
-        defaultCurrency: "brl",
-        defaultSort: "market_cap_desc",
-        perPage: 100,
-        chartDays: 7,
-        autoRefreshInterval: 60000, // 1 minute
-      }
-
-      // State
-      let state = {
-        coins: [],
-        filteredCoins: [],
-        currency: config.defaultCurrency,
-        sort: config.defaultSort,
-        searchQuery: "",
-        currentCoinId: null,
-        chart: null,
-        autoRefresh: true,
-        refreshInterval: null,
-      }
-
-      // DOM Elements
-      const elements = {
-        cryptoTableBody: document.getElementById("crypto-table-body"),
-        searchInput: document.getElementById("search-input"),
-        currencySelect: document.getElementById("currency-select"),
-        sortSelect: document.getElementById("sort-select"),
-        refreshBtn: document.getElementById("refresh-btn"),
-        lastUpdate: document.getElementById("last-update"),
-        autoRefreshToggle: document.getElementById("auto-refresh"),
-        coinModal: document.getElementById("coin-modal"),
-        closeModal: document.getElementById("close-modal"),
-        refreshChart: document.getElementById("refresh-chart"),
-        viewCoinmarketcap: document.getElementById("view-coinmarketcap"),
-        totalMarketCap: document.getElementById("total-market-cap"),
-        totalVolume: document.getElementById("total-volume"),
-        activeCryptos: document.getElementById("active-cryptos"),
-        btcDominance: document.getElementById("btc-dominance"),
-      }
-
-      // Initialize
-      document.addEventListener("DOMContentLoaded", () => {
-        fetchMarketData()
-        fetchCoinsData()
-        setupEventListeners()
-        setupAutoRefresh()
-      })
-
-      // Event Listeners
-      function setupEventListeners() {
-        elements.searchInput.addEventListener("input", (e) => {
-          state.searchQuery = e.target.value.toLowerCase()
-          filterCoins()
-        })
-
-        elements.currencySelect.addEventListener("change", (e) => {
-          state.currency = e.target.value
-          updateCurrencyDisplay()
-          renderCoinsTable()
-        })
-
-        elements.sortSelect.addEventListener("change", (e) => {
-          state.sort = e.target.value
-          sortCoins()
-          renderCoinsTable()
-        })
-
-        elements.refreshBtn.addEventListener("click", () => {
-          fetchMarketData()
-          fetchCoinsData()
-        })
-
-        elements.autoRefreshToggle.addEventListener("change", (e) => {
-          state.autoRefresh = e.target.checked
-          if (state.autoRefresh) {
-            setupAutoRefresh()
-          } else {
-            clearInterval(state.refreshInterval)
-          }
-        })
-
-        elements.closeModal.addEventListener("click", () => {
-          elements.coinModal.classList.add("hidden")
-        })
-
-        elements.refreshChart.addEventListener("click", () => {
-          if (state.currentCoinId) {
-            renderCoinChart(state.currentCoinId)
-          }
-        })
-      }
-
-      // Auto Refresh
-      function setupAutoRefresh() {
-        if (state.refreshInterval) {
-          clearInterval(state.refreshInterval)
+        // Global variables
+        let currentCurrency = 'usd';
+        let allCoinsData = [];
+        let filteredCoinsData = [];
+        
+        // DOM elements
+        const currencySelector = document.getElementById('currency-selector');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const searchInput = document.getElementById('search-input');
+        const marketCapFilter = document.getElementById('market-cap-filter');
+        const cryptoTableBody = document.getElementById('crypto-table-body');
+        const topGainers = document.getElementById('top-gainers');
+        const topLosers = document.getElementById('top-losers');
+        const totalMarketCap = document.getElementById('total-market-cap');
+        const totalVolume = document.getElementById('total-volume');
+        const activeCoins = document.getElementById('active-coins');
+        const newsContainer = document.getElementById('news-container');
+        
+        // Currency symbols
+        const currencySymbols = {
+            usd: '$',
+            eur: '€',
+            brl: 'R$'
+        };
+        
+        // Format numbers
+        function formatNumber(num, digits = 2) {
+            const lookup = [
+                { value: 1, symbol: "" },
+                { value: 1e3, symbol: "k" },
+                { value: 1e6, symbol: "M" },
+                { value: 1e9, symbol: "B" },
+                { value: 1e12, symbol: "T" }
+            ];
+            
+            const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
+            const item = lookup.slice().reverse().find(item => num >= item.value);
+            
+            return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
         }
-        if (state.autoRefresh) {
-          state.refreshInterval = setInterval(() => {
-            fetchMarketData()
-            fetchCoinsData()
-          }, config.autoRefreshInterval)
+        
+        // Format price
+        function formatPrice(price, currency) {
+            if (price < 1) {
+                return `${currencySymbols[currency]}${price.toFixed(4)}`;
+            } else if (price < 100) {
+                return `${currencySymbols[currency]}${price.toFixed(2)}`;
+            } else {
+                return `${currencySymbols[currency]}${formatNumber(price)}`;
+            }
         }
-      }
-
-      // API Fetching
-      async function fetchMarketData() {
-        try {
-          const response = await fetch(`${config.apiUrl}/global`)
-          const data = await response.json()
-          updateMarketData(data.data)
-        } catch (error) {
-          console.error("Error fetching market data:", error)
-        }
-      }
-
-      async function fetchCoinsData() {
-        try {
-          elements.lastUpdate.classList.add("blink")
-          elements.lastUpdate.textContent = "updating..."
-
-          const response = await fetch(
-            `${config.apiUrl}/coins/markets?vs_currency=${state.currency}&order=${state.sort}&per_page=${config.perPage}&page=1&sparkline=true&price_change_percentage=24h`
-          )
-          state.coins = await response.json()
-          state.filteredCoins = [...state.coins]
-
-          renderCoinsTable()
-          updateLastUpdateTime()
-          elements.lastUpdate.classList.remove("blink")
-        } catch (error) {
-          console.error("Error fetching coins data:", error)
-          elements.lastUpdate.textContent = "update failed"
-          elements.lastUpdate.classList.remove("blink")
-        }
-      }
-
-      async function fetchCoinDetails(coinId) {
-        try {
-          const response = await fetch(`${config.apiUrl}/coins/${coinId}`)
-          return await response.json()
-        } catch (error) {
-          console.error("Error fetching coin details:", error)
-          return null
-        }
-      }
-
-      async function fetchCoinChartData(coinId) {
-        try {
-          const response = await fetch(
-            `${config.apiUrl}/coins/${coinId}/market_chart?vs_currency=${state.currency}&days=${config.chartDays}`
-          )
-          return await response.json()
-        } catch (error) {
-          console.error("Error fetching chart data:", error)
-          return null
-        }
-      }
-
-      // Data Processing
-      function updateMarketData(data) {
-        elements.totalMarketCap.textContent = formatCurrency(
-          data.total_market_cap.usd,
-          "USD"
-        )
-        elements.totalVolume.textContent = formatCurrency(
-          data.total_volume.usd,
-          "USD"
-        )
-        elements.activeCryptos.textContent =
-          data.active_cryptocurrencies.toLocaleString()
-        elements.btcDominance.textContent = `${data.market_cap_percentage.btc.toFixed(
-          1
-        )}%`
-      }
-
-      function filterCoins() {
-        if (!state.searchQuery) {
-          state.filteredCoins = [...state.coins]
-        } else {
-          state.filteredCoins = state.coins.filter(
-            (coin) =>
-              coin.name.toLowerCase().includes(state.searchQuery) ||
-              coin.symbol.toLowerCase().includes(state.searchQuery)
-          )
-        }
-        renderCoinsTable()
-      }
-
-      function sortCoins() {
-        const [field, direction] = state.sort.split("_")
-
-        state.filteredCoins.sort((a, b) => {
-          let compareValue
-
-          if (field === "market") {
-            compareValue = a.market_cap - b.market_cap
-          } else if (field === "volume") {
-            compareValue = a.total_volume - b.total_volume
-          } else if (field === "id") {
-            compareValue = a.name.localeCompare(b.name)
-          }
-
-          return direction === "desc" ? -compareValue : compareValue
-        })
-      }
-
-      // Rendering
-      function renderCoinsTable() {
-        if (state.filteredCoins.length === 0) {
-          elements.cryptoTableBody.innerHTML = `
+        
+        // Fetch crypto data
+        async function fetchCryptoData(currency = 'usd') {
+            try {
+                // Show loading state
+                cryptoTableBody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">No coins found matching your search.</td>
-                    </tr>
-                `
-          return
-        }
-
-        elements.cryptoTableBody.innerHTML = state.filteredCoins
-          .map((coin, index) => {
-            const priceChangeClass =
-              coin.price_change_percentage_24h >= 0
-                ? "text-green-500"
-                : "text-red-500"
-
-            const priceChangeIcon =
-              coin.price_change_percentage_24h >= 0
-                ? '<i class="fas fa-caret-up"></i>'
-                : '<i class="fas fa-caret-down"></i>'
-
-            return `
-                    <tr class="hover:bg-gray-50 transition cursor-pointer" data-coin-id="${
-                      coin.id
-                    }">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
-                          index + 1
-                        }</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10">
-                                    <img class="h-10 w-10 rounded-full" src="${
-                                      coin.image
-                                    }" alt="${coin.name}">
-                                </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${
-                                      coin.name
-                                    }</div>
-                                    <div class="text-sm text-gray-500">${coin.symbol.toUpperCase()}</div>
-                                </div>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="flex justify-center">
+                                <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full loading-spinner"></div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            ${formatCurrency(
-                              coin.current_price,
-                              state.currency
-                            )}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm ${priceChangeClass}">
-                            ${priceChangeIcon} ${Math.abs(
-              coin.price_change_percentage_24h
-            ).toFixed(2)}%
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${formatCurrency(coin.market_cap, state.currency)}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${formatCurrency(coin.total_volume, state.currency)}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="h-10 w-32">
-                                <canvas class="sparkline" data-sparkline="${
-                                  coin.id
-                                }"></canvas>
+                    </tr>
+                `;
+                
+                // Fetch data from CoinGecko API
+                const response = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`);
+                allCoinsData = await response.json();
+                
+                // Update global stats
+                updateGlobalStats(allCoinsData, currency);
+                
+                // Filter and display data
+                filterAndDisplayCoins();
+                
+                // Update top gainers and losers
+                updateTopGainersAndLosers(allCoinsData, currency);
+                
+            } catch (error) {
+                console.error('Error fetching crypto data:', error);
+                cryptoTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-red-500">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                                <p>Erro ao carregar dados. Por favor, tente novamente.</p>
+                                <button onclick="fetchCryptoData(currentCurrency)" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-sync-alt mr-2"></i>
+                                    Tentar novamente
+                                </button>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-blue-600 hover:text-blue-900 view-details" data-coin-id="${
-                              coin.id
-                            }">Details</button>
+                    </tr>
+                `;
+            }
+        }
+        
+        // Update global stats
+        function updateGlobalStats(coinsData, currency) {
+            const totalMarketCapValue = coinsData.reduce((sum, coin) => sum + coin.market_cap, 0);
+            const totalVolumeValue = coinsData.reduce((sum, coin) => sum + coin.total_volume, 0);
+            
+            totalMarketCap.textContent = `${currencySymbols[currency]}${formatNumber(totalMarketCapValue)}`;
+            totalVolume.textContent = `${currencySymbols[currency]}${formatNumber(totalVolumeValue)}`;
+            activeCoins.textContent = coinsData.length;
+        }
+        
+        // Filter and display coins
+        function filterAndDisplayCoins() {
+            // Apply market cap filter
+            let filteredData = [...allCoinsData];
+            const filterValue = marketCapFilter.value;
+            
+            if (filterValue === 'top10') {
+                filteredData = filteredData.slice(0, 10);
+            } else if (filterValue === 'top50') {
+                filteredData = filteredData.slice(0, 50);
+            } else if (filterValue === 'top100') {
+                filteredData = filteredData.slice(0, 100);
+            }
+            
+            // Apply search filter
+            const searchTerm = searchInput.value.toLowerCase();
+            if (searchTerm) {
+                filteredData = filteredData.filter(coin => 
+                    coin.name.toLowerCase().includes(searchTerm) || 
+                    coin.symbol.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            filteredCoinsData = filteredData;
+            
+            // Update table
+            updateCryptoTable(filteredData, currentCurrency);
+        }
+        
+        // Update crypto table
+        function updateCryptoTable(coinsData, currency) {
+            if (coinsData.length === 0) {
+                cryptoTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            Nenhuma criptomoeda encontrada com os critérios de busca.
                         </td>
                     </tr>
-                `
-          })
-          .join("")
-
-        // Add event listeners to table rows
-        document.querySelectorAll("[data-coin-id]").forEach((row) => {
-          row.addEventListener("click", (e) => {
-            // Don't open modal if clicking on the details button
-            if (!e.target.classList.contains("view-details")) {
-              const coinId = row.getAttribute("data-coin-id")
-              openCoinModal(coinId)
+                `;
+                return;
             }
-          })
-        })
-
-        // Add event listeners to details buttons
-        document.querySelectorAll(".view-details").forEach((button) => {
-          button.addEventListener("click", (e) => {
-            e.stopPropagation()
-            const coinId = button.getAttribute("data-coin-id")
-            openCoinModal(coinId)
-          })
-        })
-
-        // Render sparkline charts
-        renderSparklines()
-      }
-
-      function renderSparklines() {
-        state.filteredCoins.forEach((coin) => {
-          const canvas = document.querySelector(
-            `canvas[data-sparkline="${coin.id}"]`
-          )
-          if (canvas) {
-            const ctx = canvas.getContext("2d")
-            const prices = coin.sparkline_in_7d.price
-            const isPositive = coin.price_change_percentage_24h >= 0
-
-            // Clear previous chart if it exists
-            if (canvas.chart) {
-              canvas.chart.destroy()
+            
+            cryptoTableBody.innerHTML = coinsData.map((coin, index) => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <img src="${coin.image}" alt="${coin.name}" class="w-8 h-8 rounded-full mr-3">
+                            <div>
+                                <div class="font-medium text-gray-900">${coin.name}</div>
+                                <div class="text-sm text-gray-500">${coin.symbol.toUpperCase()}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${formatPrice(coin.current_price, currency)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}">
+                        ${coin.price_change_percentage_24h >= 0 ? '+' : ''}${coin.price_change_percentage_24h.toFixed(2)}%
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${currencySymbols[currency]}${formatNumber(coin.market_cap)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${currencySymbols[currency]}${formatNumber(coin.total_volume)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button class="text-blue-600 hover:text-blue-800 mr-3" onclick="showCoinDetails('${coin.id}')">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                        <button class="text-green-600 hover:text-green-800" onclick="addToWatchlist('${coin.id}')">
+                            <i class="fas fa-star"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Update top gainers and losers
+        function updateTopGainersAndLosers(coinsData, currency) {
+            // Sort by 24h change
+            const sortedByChange = [...coinsData].sort((a, b) => 
+                b.price_change_percentage_24h - a.price_change_percentage_24h
+            );
+            
+            // Top 5 gainers
+            const gainers = sortedByChange.slice(0, 5);
+            topGainers.innerHTML = gainers.map(coin => `
+                <div class="px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                        <img src="${coin.image}" alt="${coin.name}" class="w-6 h-6 rounded-full mr-3">
+                        <span class="font-medium">${coin.symbol.toUpperCase()}</span>
+                    </div>
+                    <span class="positive font-semibold">+${coin.price_change_percentage_24h.toFixed(2)}%</span>
+                </div>
+            `).join('');
+            
+            // Top 5 losers
+            const losers = sortedByChange.slice(-5).reverse();
+            topLosers.innerHTML = losers.map(coin => `
+                <div class="px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                        <img src="${coin.image}" alt="${coin.name}" class="w-6 h-6 rounded-full mr-3">
+                        <span class="font-medium">${coin.symbol.toUpperCase()}</span>
+                    </div>
+                    <span class="negative font-semibold">${coin.price_change_percentage_24h.toFixed(2)}%</span>
+                </div>
+            `).join('');
+        }
+        
+        // Fetch crypto news
+        async function fetchCryptoNews() {
+            try {
+                // Simulate news fetch (in a real app, you would use a news API)
+                setTimeout(() => {
+                    const sampleNews = [
+                        {
+                            title: "Bitcoin atinge novo recorde em meio a adoção institucional",
+                            source: "CryptoNews",
+                            date: "15 min atrás",
+                            description: "O preço do Bitcoin subiu para US$ 45.000 após anúncio de nova empresa listada na Fortune 500 adotando a criptomoeda."
+                        },
+                        {
+                            title: "Ethereum 2.0: Atualização traz redução de 99% no consumo de energia",
+                            source: "Blockchain Daily",
+                            date: "2 horas atrás",
+                            description: "A tão esperada atualização do Ethereum foi implementada com sucesso, marcando uma nova era para a segunda maior criptomoeda."
+                        },
+                        {
+                            title: "Reguladores globais discutem framework para criptomoedas",
+                            source: "Finance Watch",
+                            date: "5 horas atrás",
+                            description: "Representantes de 20 países se reuniram para discutir a criação de um marco regulatório internacional para criptoativos."
+                        }
+                    ];
+                    
+                    newsContainer.innerHTML = sampleNews.map(news => `
+                        <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                            <div class="h-48 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                                <i class="fas fa-newspaper text-6xl opacity-50"></i>
+                            </div>
+                            <div class="p-4">
+                                <h4 class="font-bold text-lg mb-2">${news.title}</h4>
+                                <div class="flex items-center text-sm text-gray-500 mb-3">
+                                    <span>${news.source}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>${news.date}</span>
+                                </div>
+                                <p class="text-gray-700">${news.description}</p>
+                                <button class="mt-4 text-blue-600 hover:text-blue-800 font-medium">
+                                    Ler mais <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                newsContainer.innerHTML = `
+                    <div class="col-span-3 text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-3xl mb-3"></i>
+                        <p>Não foi possível carregar as notícias no momento.</p>
+                    </div>
+                `;
             }
-
-            canvas.chart = new Chart(ctx, {
-              type: "line",
-              data: {
-                labels: Array(prices.length).fill(""),
-                datasets: [
-                  {
-                    data: prices,
-                    borderColor: isPositive ? "#10B981" : "#EF4444",
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                  },
-                ],
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                  tooltip: {
-                    enabled: false,
-                  },
-                },
-                scales: {
-                  x: {
-                    display: false,
-                  },
-                  y: {
-                    display: false,
-                  },
-                },
-              },
-            })
-          }
-        })
-      }
-
-      async function openCoinModal(coinId) {
-        state.currentCoinId = coinId
-
-        // Show loading state
-        elements.coinModal.classList.remove("hidden")
-        document.getElementById("modal-coin-name").textContent = "Loading..."
-
-        // Fetch coin details
-        const coinDetails = await fetchCoinDetails(coinId)
-        if (!coinDetails) {
-          alert("Failed to load coin details")
-          return
         }
-
-        // Update modal with basic info
-        document.getElementById("modal-coin-name").textContent =
-          coinDetails.name
-        document.getElementById("modal-coin-symbol").textContent =
-          coinDetails.symbol.toUpperCase()
-
-        // Format and display price data
-        const currentPrice =
-          coinDetails.market_data.current_price[state.currency]
-        document.getElementById("modal-coin-price").textContent =
-          formatCurrency(currentPrice, state.currency)
-
-        const priceChange24h =
-          coinDetails.market_data.price_change_percentage_24h
-        const priceChangeElement = document.getElementById("modal-coin-change")
-        priceChangeElement.textContent = `${
-          priceChange24h >= 0 ? "+" : ""
-        }${priceChange24h.toFixed(2)}%`
-        priceChangeElement.className = `px-3 py-1 rounded-full text-sm font-medium ${
-          priceChange24h >= 0
-            ? "bg-green-100 text-green-800"
-            : "bg-red-100 text-red-800"
-        }`
-
-        // Format and display market data
-        document.getElementById("modal-coin-market-cap").textContent =
-          formatCurrency(
-            coinDetails.market_data.market_cap[state.currency],
-            state.currency
-          )
-
-        document.getElementById("modal-coin-volume").textContent =
-          formatCurrency(
-            coinDetails.market_data.total_volume[state.currency],
-            state.currency
-          )
-
-        document.getElementById(
-          "modal-coin-supply"
-        ).textContent = `${coinDetails.market_data.circulating_supply.toLocaleString()} ${coinDetails.symbol.toUpperCase()}`
-
-        document.getElementById(
-          "modal-coin-ath"
-        ).textContent = `${formatCurrency(
-          coinDetails.market_data.ath[state.currency],
-          state.currency
-        )} (${new Date(
-          coinDetails.market_data.ath_date[state.currency]
-        ).toLocaleDateString()})`
-
-        // Additional info
-        document.getElementById("modal-coin-genesis").textContent =
-          coinDetails.genesis_date || "N/A"
-
-        document.getElementById("modal-coin-algorithm").textContent =
-          coinDetails.hashing_algorithm || "N/A"
-
-        const homepageLink = document.getElementById("modal-coin-homepage")
-        if (coinDetails.links.homepage[0]) {
-          homepageLink.textContent = coinDetails.links.homepage[0]
-          homepageLink.href = coinDetails.links.homepage[0]
-        } else {
-          homepageLink.textContent = "N/A"
-          homepageLink.removeAttribute("href")
+        
+        // Show coin details (placeholder)
+        function showCoinDetails(coinId) {
+            alert(`Detalhes da moeda com ID: ${coinId}\nEm uma implementação real, isso abriria um modal ou página de detalhes.`);
         }
-
-        // Set CoinGecko link
-        elements.viewCoinmarketcap.onclick = () => {
-          window.open(`https://www.coingecko.com/en/coins/${coinId}`, "_blank")
+        
+        // Add to watchlist (placeholder)
+        function addToWatchlist(coinId) {
+            const coin = allCoinsData.find(c => c.id === coinId);
+            alert(`Adicionado à watchlist: ${coin.name} (${coin.symbol.toUpperCase()})`);
         }
-
-        // Render chart
-        renderCoinChart(coinId)
-      }
-
-      async function renderCoinChart(coinId) {
-        const chartData = await fetchCoinChartData(coinId)
-        if (!chartData) return
-
-        const prices = chartData.prices.map((price) => price[1])
-        const timestamps = chartData.prices.map((price) => new Date(price[0]))
-
-        const ctx = document.getElementById("coin-chart").getContext("2d")
-
-        // Destroy previous chart if it exists
-        if (state.chart) {
-          state.chart.destroy()
-        }
-
-        state.chart = new Chart(ctx, {
-          type: "line",
-          data: {
-            labels: timestamps,
-            datasets: [
-              {
-                label: "Price",
-                data: prices,
-                borderColor: "#3B82F6",
-                backgroundColor: "rgba(59, 130, 246, 0.1)",
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: {
-                display: false,
-              },
-              tooltip: {
-                mode: "index",
-                intersect: false,
-                callbacks: {
-                  label: function (context) {
-                    return `${context.dataset.label}: ${formatCurrency(
-                      context.raw,
-                      state.currency
-                    )}`
-                  },
-                },
-              },
-            },
-            scales: {
-              x: {
-                type: "time",
-                time: {
-                  unit: "day",
-                  tooltipFormat: "MMM d, yyyy",
-                },
-                grid: {
-                  display: false,
-                },
-              },
-              y: {
-                ticks: {
-                  callback: function (value) {
-                    return formatCurrency(value, state.currency, true)
-                  },
-                },
-              },
-            },
-          },
-        })
-      }
-
-      // Helper Functions
-      function formatCurrency(value, currency, short = false) {
-        if (value === null || value === undefined) return "N/A"
-
-        const formatter = new Intl.NumberFormat(undefined, {
-          style: "currency",
-          currency: currency.toUpperCase(),
-          minimumFractionDigits: value < 1 ? 4 : 2,
-          maximumFractionDigits: value < 1 ? 6 : 2,
-        })
-
-        let formattedValue = formatter.format(value)
-
-        if (short && value >= 1000) {
-          const suffixes = ["", "K", "M", "B", "T"]
-          const suffixNum = Math.floor(Math.log10(value) / 3)
-          const shortValue = value / Math.pow(1000, suffixNum)
-
-          // Get the currency symbol
-          const parts = formatter.formatToParts(shortValue)
-          const currencySymbol = parts.find(
-            (part) => part.type === "currency"
-          ).value
-
-          return `${currencySymbol}${shortValue.toFixed(2)}${
-            suffixes[suffixNum]
-          }`
-        }
-
-        return formattedValue
-      }
-
-      function updateLastUpdateTime() {
-        const now = new Date()
-        elements.lastUpdate.textContent = now.toLocaleTimeString()
-      }
-
-      function updateCurrencyDisplay() {
-        // Update all currency displays in the table
-        document.querySelectorAll("[data-price]").forEach((element) => {
-          const coinId = element.getAttribute("data-coin-id")
-          const coin = state.coins.find((c) => c.id === coinId)
-          if (coin) {
-            element.textContent = formatCurrency(
-              coin.current_price,
-              state.currency
-            )
-          }
-        })
-      }
+        
+        // Event listeners
+        currencySelector.addEventListener('change', (e) => {
+            currentCurrency = e.target.value;
+            fetchCryptoData(currentCurrency);
+        });
+        
+        refreshBtn.addEventListener('click', () => {
+            fetchCryptoData(currentCurrency);
+        });
+        
+        searchInput.addEventListener('input', () => {
+            filterAndDisplayCoins();
+        });
+        
+        marketCapFilter.addEventListener('change', () => {
+            filterAndDisplayCoins();
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCryptoData(currentCurrency);
+            fetchCryptoNews();
+            
+            // Auto-refresh every 60 seconds
+            setInterval(() => {
+                fetchCryptoData(currentCurrency);
+            }, 60000);
+        });
     </script>
-  </body>
+</body>
 </html>
